@@ -35,13 +35,13 @@ readonly TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 #############################################################################
 
 print_header() {
-    echo "============================================================"
-    echo "                        $1"
-    echo "============================================================"
+    echo "============================================="
+    echo "               $1"
+    echo "============================================="
 }
 
 print_separator() {
-    echo "------------------------------------------------------------"
+    echo "---------------------------------------------"
 }
 
 check_config_files() {
@@ -58,7 +58,7 @@ check_config_files() {
         echo "Task:            Configuration validation"
         echo "Exit Code:       $EXIT_CONFIG_ERROR"
         echo ""
-        echo "------------------------- ERROR --------------------------"
+        echo "------------------ ERROR --------------------"
         echo "Missing configuration files:"
         printf '%s\n' "${missing_files[@]}"
         echo ""
@@ -83,7 +83,7 @@ load_environment() {
         echo "Task:            Environment validation"
         echo "Exit Code:       $EXIT_CONFIG_ERROR"
         echo ""
-        echo "------------------------- ERROR --------------------------"
+        echo "------------------ ERROR --------------------"
         echo "Missing environment variables in $ENV_FILE:"
         printf '%s\n' "${missing_vars[@]}"
         echo ""
@@ -91,7 +91,7 @@ load_environment() {
         exit $EXIT_CONFIG_ERROR
     fi
     
-    # Set password file path
+    # Set password file path. NOTE: IF RESTIC_PASSWORD IS ALREADY SET, DO NOT OVERRIDE IT
     if [[ -z "${RESTIC_PASSWORD:-}" ]]; then
         export RESTIC_PASSWORD_FILE="$PASSWORD_FILE"
     fi
@@ -120,7 +120,7 @@ check_backup_paths_permissions() {
         echo "Task:            Permission check"
         echo "Exit Code:       $EXIT_PERMISSION_ERROR"
         echo ""
-        echo "------------------------- ERROR --------------------------"
+        echo "------------------ ERROR --------------------"
         echo "Inaccessible backup paths:"
         printf '%s\n' "${inaccessible_paths[@]}"
         echo ""
@@ -206,7 +206,7 @@ run_backup_with_retry() {
             echo "Repository:     $RESTIC_REPOSITORY"
             echo "Source Dirs:    ${backup_paths[*]}"
             echo ""
-            echo "-------------------- Restic Summary --------------------"
+            echo "-------------- Restic Summary ---------------"
             echo "Files:          $files_new new, $files_changed changed, $files_unmodified unmodified"
             echo "Dirs:           $dirs_new new, $dirs_changed changed, $dirs_unmodified unmodified"
             echo "Data Added:     $data_added_formatted"
@@ -232,7 +232,7 @@ run_backup_with_retry() {
                 echo "Task:            Network connection to B2"
                 echo "Exit Code:       $EXIT_NETWORK_ERROR"
                 echo ""
-                echo "------------------------- ERROR --------------------------"
+                echo "------------------ ERROR --------------------"
                 echo "Network error after $MAX_RETRIES attempts:"
                 echo "$backup_output" | head -20
                 echo ""
@@ -246,7 +246,7 @@ run_backup_with_retry() {
             echo "Task:            Attempting to back up to $RESTIC_REPOSITORY"
             echo "Exit Code:       $backup_exit_code"
             echo ""
-            echo "------------------------- ERROR --------------------------"
+            echo "------------------ ERROR --------------------"
             echo "$backup_output" | head -20
             echo ""
             print_separator
