@@ -92,7 +92,9 @@ load_environment() {
     fi
     
     # Set password file path
-    export RESTIC_PASSWORD_FILE="$PASSWORD_FILE"
+    if [[ -z "${RESTIC_PASSWORD:-}" ]]; then
+        export RESTIC_PASSWORD_FILE="$PASSWORD_FILE"
+    fi
 }
 
 check_backup_paths_permissions() {
