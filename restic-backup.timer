@@ -1,0 +1,20 @@
+# ~/.config/systemd/user/restic-backup.timer
+# Systemd timer for automated restic backups to Backblaze B2 every 2 weeks
+
+[Unit]
+Description=Schedule Restic backups to B2 every 2 weeks
+Requires=restic-backup.service
+
+[Timer]
+# Run every 2 weeks (bi-weekly)
+# Runs on the 1st and 15th of each month at 2:30 AM
+OnCalendar=*-*-01,15 02:30:00
+# Also run 10 minutes after boot if a scheduled run was missed
+OnBootSec=10min
+# If the system was powered down when a backup should have run, run it when powered on
+Persistent=true
+# Randomize start time by up to 30 minutes to avoid load spikes
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target
