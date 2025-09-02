@@ -6,30 +6,22 @@ Description=Restic Backup to Backblaze B2
 After=network-online.target
 Wants=network-online.target
 
+# Optional: Automatically send failure notification if service fails
+# OnFailure=telegram-notify@%n.service
+
 [Service]
 Type=oneshot
 
 # Execute the backup script
-ExecStart=%h/bin/restic-backup.sh
+ExecStart=~/.config/restic/restic-backup.sh
 
 # Restart policy for network failures
 Restart=on-failure
 RestartSec=5min
 RestartPreventExitStatus=0
 
-# Resource limits
-Nice=19
-IOSchedulingClass=idle
-IOSchedulingPriority=7
-CPUQuota=50%
-
-# Logging
-StandardOutput=journal+console
-StandardError=journal+console
-SyslogIdentifier=restic-backup
-
 # Timeout (4 hours should be enough for most backups)
 TimeoutStartSec=4h
 
-[Install]
-WantedBy=default.target
+# Optional: Automatically send success notification
+# ExecStartPost=/run/media/user01/1TB-Disk/Code/Scripts/telegram-notifier/telegram-notifier %n
