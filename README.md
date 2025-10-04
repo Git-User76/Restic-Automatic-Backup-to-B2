@@ -1,14 +1,11 @@
 # Restic Backup to Backblaze B2
 
-Automated, secure backup solution using [Restic](https://restic.net/) with [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) cloud storage.
-
-_Simple, reliable backups from Linux to Backblaze B2 with encryption, retry logic, and systemd integration._
+Simple script to automate secure backups with [Restic](https://restic.net/) with [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) cloud storage.
 
 ---
 <br>
 
-## Features
-
+## ✨ Features
 - **Secure**: AES-256 encryption, strict file permissions (0600), comprehensive input validation
 - **Reliable**: Automatic retry logic with configurable attempts for network failures
 - **Minimal**: Single bash script with only restic as a dependency
@@ -19,8 +16,14 @@ _Simple, reliable backups from Linux to Backblaze B2 with encryption, retry logi
 ---
 <br>
 
+## 📋 Requirements
+- Restic installed in the local machine.
+- Backblaze B2 account (can be free-tier or paid).
 
-## Directory Structure
+---
+<br>
+
+## 📁 Configuration Files
 ### Configuration File Locations
 
 ```
@@ -45,7 +48,7 @@ Contains Backblaze B2 credentials and repository configuration.
 - `RETRY_DELAY` - Seconds to wait between retries (default: 30)
 
 **Example:**
-```bash
+```shell
 B2_ACCOUNT_ID="0123456789abcdef01234567"
 B2_ACCOUNT_KEY="K001aBcDeFgHiJkLmNoPqRsTuVwXyZ"
 RESTIC_REPOSITORY="b2:my-backup-bucket:restic"
@@ -53,7 +56,8 @@ RESTIC_REPOSITORY="b2:my-backup-bucket:restic"
 
 ### repository.password
 
-Contains the encryption password for the restic repository. This is auto-generated and should be stored securely in a password manager as a backup.
+Contains the encryption password for the restic repository.
+This should be stored securely in a password manager as a backup.
 
 ### backup-paths.conf
 
@@ -64,7 +68,7 @@ List of paths to back up, one per line. Supports:
 - Empty lines (ignored)
 
 **Example:**
-```bash
+```shell
 # User data
 ~/Documents
 ~/Pictures
@@ -82,7 +86,7 @@ Exclusion patterns using restic's syntax. Supports:
 - Comments: Lines starting with `#`
 
 **Example:**
-```bash
+```shell
 # Caches
 **/.cache/**
 **/cache/**
@@ -95,11 +99,11 @@ Exclusion patterns using restic's syntax. Supports:
 ---
 <br>
 
-## Installation
+## 🔧 Installation
 
 ### 1. Install Restic
 
-```bash
+```shell
 # Debian/Ubuntu
 sudo apt install restic
 
@@ -125,21 +129,13 @@ mv restic-backup.sh ~/.local/bin/restic-backup.sh
 ---
 <br>
 
-## Configuration
-
-### Step 1: Create Configuration Directory
-
+## ⚙️ Configuration
+### Step 1: Create Configuration Files
 ```shell
+# Create configuration directory
 mkdir -p ~/.config/restic
-```
 
-<br>
-
-### Step 2: Create Configuration Files
-
-Create the following files in `~/.config/restic/`:
-
-```shell
+# Create the following files in `~/.config/restic/`
 touch ~/.config/restic/config.env
 touch ~/.config/restic/repository.password
 touch ~/.config/restic/backup-paths.conf
@@ -148,7 +144,7 @@ touch ~/.config/restic/exclude-patterns.conf
 
 <br>
 
-### Step 3: Set Configuration File Permissions
+### Step 2: Set Configuration File Permissions
 
 ```shell
 # Secure permissions for sensitive files
@@ -162,7 +158,7 @@ chmod 644 ~/.config/restic/exclude-patterns.conf
 
 <br>
 
-### Step 4: Configure B2 Credentials
+### Step 3: Configure B2 Credentials
 
 Get your Backblaze B2 credentials:
 1. Log in to [Backblaze](https://secure.backblaze.com/)
@@ -185,13 +181,14 @@ RESTIC_REPOSITORY="b2:your-bucket-name:restic-backups"
 
 <br>
 
-### Step 5: Generate Restic Repository Password
+### Step 4: Set Restic Repository Password
+Edit `~/.config/restic/repository.password`:
 
 ```shell
 # Generate a strong random password
 head -c 32 /dev/urandom | base64 > ~/.config/restic/repository.password
 
-# You can also just put the password you want in ~/.config/restic/repository.password
+# You can also just put the password you want in this file
 echo "mypassword" > ~/.config/restic/repository.password
 
 # IMPORTANT: Save this password in a secure location (password manager)
@@ -200,8 +197,7 @@ echo "mypassword" > ~/.config/restic/repository.password
 
 <br>
 
-### Step 6: Configure Backup Paths
-
+### Step 5: Configure Backup Paths
 Edit `~/.config/restic/backup-paths.conf` (one path per line):
 
 ```shell
@@ -214,7 +210,7 @@ Edit `~/.config/restic/backup-paths.conf` (one path per line):
 
 <br>
 
-### Step 7: Configure File Patterns to Exclude
+### Step 6: Configure File Patterns to Exclude
 
 Edit `~/.config/restic/exclude-patterns.conf`:
 
@@ -240,7 +236,7 @@ Edit `~/.config/restic/exclude-patterns.conf`:
 
 <br>
 
-### Step 8: Initialize Repository
+### Step 7: Initialize Repository
 
 **This is a one-time operation** - only run once per repository:
 
@@ -261,37 +257,21 @@ created restic repository 1a2b3c4d5e at b2:your-bucket-name:restic-backups
 ---
 <br>
 
-## Usage
-
+## 🚀 Usage
 ### Manual Backup
 
 ```shell
-# Run the backup script (once in your $PATH)
+# Run the backup script (once the script is in your $PATH)
 restic-backup.sh
-```
-
-**Expected output on success:**
-```
-=============================================
-               BACKUP SUCCESSFUL
-=============================================
-Timestamp:      2025-10-04 14:32:15
-Repository:     b2:my-bucket:restic-backups
-Source Dirs:    /home/user/Documents /home/user/Pictures
-
--------------- Restic Summary ---------------
-Files:          15 new, 3 changed, 1247 unmodified
-Dirs:           2 new, 1 changed, 89 unmodified
-Data Added:     42.3 MiB
-Total Processed: 1.2 GiB
-Duration:       2m 15s
-Snapshot ID:    a1b2c3d4
----------------------------------------------
 ```
 
 <br>
 
 ### Automated Backups with Systemd Timers
+#### Create User Service Directory 
+```shell
+mkdir -p ~/.config/systemd/user
+```
 
 #### Create User Service File
 
@@ -350,15 +330,6 @@ systemctl --user daemon-reload
 
 # Enable timer to start on boot
 systemctl --user enable restic-backup.timer
-
-# Start timer now
-systemctl --user start restic-backup.timer
-
-# Check timer status
-systemctl --user status restic-backup.timer
-
-# View all timers
-systemctl --user list-timers
 ```
 
 #### View Backup Logs
@@ -466,3 +437,23 @@ restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --prune
 ```
 
 ---
+<br>
+
+## 📊 Resulting Output
+
+```text
+=============================================
+               BACKUP SUCCESSFUL
+=============================================
+Timestamp:      2025-10-04 01:26:01
+Repository:     b2:MyPrivateBucket666:restic_repo
+Source Dirs:    /home/user/.bashrc.d/ /home/user/Backup/
+-------------- Restic Summary ---------------
+Files:          0 new, 1 changed, 12831 unmodified
+Dirs:           0 new, 4 changed, 4701 unmodified
+Data Added:     18KiB
+Total Processed: 232MiB
+Duration:       0m 6s
+Snapshot ID:    e6011852
+---------------------------------------------
+```

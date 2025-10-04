@@ -1,6 +1,6 @@
-## Troubleshooting
+# Troubleshooting
 
-### Permission Errors
+## Permission Errors
 
 **Error:** `Password file has insecure permissions: 644`
 
@@ -12,7 +12,7 @@ chmod 600 ~/.config/restic/config.env
 
 <br>
 
-### Missing Configuration Files
+## Missing Configuration Files
 
 **Error:** `Missing configuration files`
 
@@ -33,7 +33,7 @@ touch ~/.config/restic/{config.env,repository.password,backup-paths.conf,exclude
 
 <br>
 
-### Network Errors
+## Network Errors
 
 **Error:** `Network error after 3 attempts`
 
@@ -58,7 +58,7 @@ sudo iptables -L -n | grep 443
 
 <br>
 
-### Repository Locked
+## Repository Locked
 
 **Error:** `unable to create lock: repository is already locked`
 
@@ -79,7 +79,7 @@ restic unlock
 
 <br>
 
-### Invalid Credentials
+## Invalid Credentials
 
 **Error:** `unable to open repository: Account ID or Application Key is wrong`
 
@@ -96,7 +96,7 @@ restic -r $RESTIC_REPOSITORY snapshots
 
 <br>
 
-### Backup Paths Not Found
+## Backup Paths Not Found
 
 **Error:** `Inaccessible backup paths: /path/to/dir (not found)`
 
@@ -115,9 +115,9 @@ vim ~/.config/restic/backup-paths.conf
 ```
 
 ---
-<br>
+<br><br>
 
-## Exit Codes
+# Exit Codes
 
 The script uses specific exit codes for better systemd integration:
 
