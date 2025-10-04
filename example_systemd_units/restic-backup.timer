@@ -7,7 +7,6 @@ Requires=restic-backup.service
 
 [Timer]
 # Run every 2 weeks (bi-weekly)
-# Runs on the 1st and 15th of each month at 2:30 AM
 OnCalendar=*-*-01,15 02:30:00
 # Also run 10 minutes after boot if a scheduled run was missed
 OnBootSec=10min

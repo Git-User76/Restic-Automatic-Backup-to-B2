@@ -1,0 +1,16 @@
+# ~/.config/systemd/user/restic-backup.service
+# Systemd service unit for automated restic backups to B2
+
+[Unit]
+Description=Restic Backup to Backblaze B2
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+
+# Execute the backup script
+ExecStart=~/.local/bin/restic-backup.sh
+
+# Timeout (4 hours should be enough for most backups)
+TimeoutStartSec=4h
