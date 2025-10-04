@@ -16,13 +16,14 @@ readonly EXCLUDE_FILE="${CONFIG_DIR}/exclude-patterns.conf"
 
 # Retry settings
 readonly MAX_RETRIES=3
-readonly RETRY_DELAY=30
+readonly BASE_RETRY_DELAY=30
 
 # Exit codes
 readonly EXIT_CONFIG_ERROR=10
 readonly EXIT_PERMISSION_ERROR=11
 readonly EXIT_BACKUP_ERROR=12
 readonly EXIT_NETWORK_ERROR=13
+readonly EXIT_VERIFICATION_ERROR=14
 
 # Get timestamp
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -71,8 +72,9 @@ validate_config_files() {
         exit_with_error "Configuration validation" "${EXIT_CONFIG_ERROR}" "${error_msg}"
     fi
     
-    # Verify password file permissions
-    local perms=$(stat -c '%a' "${PASSWORD_FILE}" 2>/dev/null || echo "000")
+    # Verify password file permissions (Linux-specific stat)
+    local perms
+    perms=$(stat -c '%a' "${PASSWORD_FILE}" 2>/dev/null || echo "000")
     if [[ ${perms} -gt 600 ]]; then
         local error_msg="Password file has insecure permissions: ${perms}"$'\n'
         error_msg+="Run: chmod 600 ${PASSWORD_FILE}"
@@ -80,11 +82,43 @@ validate_config_files() {
     fi
 }
 
-# Load and validate environment variables
+# Safely load and validate environment variables
 load_environment() {
-    # Source environment file
-    # shellcheck source=/dev/null
-    source "${ENV_FILE}"
+    local line key value
+    
+    # Parse environment file safely without executing it
+    while IFS= read -r line || [[ -n "${line}" ]]; do
+        # Remove leading/trailing whitespace
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+        
+        # Skip empty lines and comments
+        [[ -z "${line}" || "${line}" =~ ^# ]] && continue
+        
+        # Remove 'export ' prefix if present
+        line="${line#export }"
+        
+        # Extract key and value
+        if [[ "${line}" =~ ^([A-Z_][A-Z0-9_]*)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+            
+            # Remove surrounding quotes if present
+            value="${value#\"}"
+            value="${value%\"}"
+            value="${value#\'}"
+            value="${value%\'}"
+            
+            # Validate key is a safe variable name
+            if [[ ! "${key}" =~ ^[A-Z_][A-Z0-9_]*$ ]]; then
+                exit_with_error "Environment validation" "${EXIT_CONFIG_ERROR}" \
+                    "Invalid variable name in ${ENV_FILE}: ${key}"
+            fi
+            
+            # Export the variable
+            export "${key}=${value}"
+        fi
+    done < "${ENV_FILE}"
     
     # Validate required variables
     local missing=()
@@ -100,21 +134,33 @@ load_environment() {
     
     # Set password file if RESTIC_PASSWORD not already set
     [[ -z "${RESTIC_PASSWORD:-}" ]] && export RESTIC_PASSWORD_FILE="${PASSWORD_FILE}"
-    
-    # Export B2 credentials for restic
-    export B2_ACCOUNT_ID
-    export B2_ACCOUNT_KEY
-    export RESTIC_REPOSITORY
 }
 
-# Check backup paths are accessible
+# Check backup paths are accessible with proper sanitization
 validate_backup_paths() {
     local inaccessible=()
+    local path line
     
-    while IFS= read -r path || [[ -n "${path}" ]]; do
-        [[ -z "${path}" || "${path}" =~ ^[[:space:]]*# ]] && continue
+    while IFS= read -r line || [[ -n "${line}" ]]; do
+        # Remove leading/trailing whitespace
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+        
+        # Skip empty lines and comments
+        [[ -z "${line}" || "${line}" =~ ^# ]] && continue
+        
+        path="${line}"
+        
+        # Expand tilde to home directory
         path="${path/#\~/${HOME}}"
         
+        # Resolve to absolute path and validate (this is the real security check)
+        if ! path=$(realpath -m "${path}" 2>/dev/null); then
+            exit_with_error "Path validation" "${EXIT_CONFIG_ERROR}" \
+                "Invalid path format: ${line}"
+        fi
+        
+        # Check existence and readability
         if [[ ! -e "${path}" ]]; then
             inaccessible+=("${path} (not found)")
         elif [[ ! -r "${path}" ]]; then
@@ -129,32 +175,71 @@ validate_backup_paths() {
     fi
 }
 
-# Execute backup with retry logic
+# Verify backup integrity
+verify_backup() {
+    echo ""
+    echo "Verifying backup integrity..."
+    
+    local verify_output
+    local verify_code
+    
+    # Use conditional execution instead of set +e
+    if verify_output=$(restic check --read-data-subset=5% 2>&1); then
+        verify_code=0
+        echo "✓ Backup verification successful"
+    else
+        verify_code=$?
+        local error_msg="Backup verification failed (exit code: ${verify_code}):"$'\n'
+        error_msg+=$(echo "${verify_output}" | head -20)
+        exit_with_error "Backup verification" "${EXIT_VERIFICATION_ERROR}" "${error_msg}"
+    fi
+}
+
+# Execute backup with retry logic and exponential backoff
 execute_backup() {
     local attempt=1
     local output
     local exit_code
     
-    # Build backup paths array
+    # Build backup paths array with proper sanitization
     local paths=()
-    while IFS= read -r path || [[ -n "${path}" ]]; do
-        [[ -z "${path}" || "${path}" =~ ^[[:space:]]*# ]] && continue
-        paths+=("${path/#\~/${HOME}}")
+    local line path
+    
+    while IFS= read -r line || [[ -n "${line}" ]]; do
+        # Remove leading/trailing whitespace
+        line="${line#"${line%%[![:space:]]*}"}"
+        line="${line%"${line##*[![:space:]]}"}"
+        
+        # Skip empty lines and comments
+        [[ -z "${line}" || "${line}" =~ ^# ]] && continue
+        
+        path="${line}"
+        
+        # Expand tilde and resolve path
+        path="${path/#\~/${HOME}}"
+        path=$(realpath -m "${path}" 2>/dev/null) || continue
+        
+        paths+=("${path}")
     done < "${BACKUP_PATHS_FILE}"
     
     while [[ ${attempt} -le ${MAX_RETRIES} ]]; do
-        set +e
-        output=$(restic backup \
+        # Use conditional execution instead of toggling set -e
+        if output=$(restic backup \
             --exclude-file="${EXCLUDE_FILE}" \
             --json \
-            "${paths[@]}" 2>&1)
-        exit_code=$?
-        set -e
+            "${paths[@]}" 2>&1); then
+            exit_code=0
+        else
+            exit_code=$?
+        fi
         
         if [[ ${exit_code} -eq 0 ]]; then
-            # Parse summary from JSON output
+            # Parse summary from JSON output - extract valid JSON lines
             local summary
-            summary=$(echo "${output}" | tail -n1)
+            summary=$(echo "${output}" | grep -E '^\{.*\}$' | tail -n1)
+            
+            # Fallback to empty JSON if no valid JSON found
+            [[ -z "${summary}" ]] && summary='{}'
             
             # Initialize variables
             local snapshot_id="N/A"
@@ -163,18 +248,19 @@ execute_backup() {
             local data_added=0 total_bytes=0
             local duration=""
             
-            if command -v jq &> /dev/null; then
-                snapshot_id=$(echo "${summary}" | jq -r '.snapshot_id // "N/A"' | cut -c1-8)
-                files_new=$(echo "${summary}" | jq -r '.files_new // 0')
-                files_changed=$(echo "${summary}" | jq -r '.files_changed // 0')
-                files_unmodified=$(echo "${summary}" | jq -r '.files_unmodified // 0')
-                dirs_new=$(echo "${summary}" | jq -r '.dirs_new // 0')
-                dirs_changed=$(echo "${summary}" | jq -r '.dirs_changed // 0')
-                dirs_unmodified=$(echo "${summary}" | jq -r '.dirs_unmodified // 0')
-                data_added=$(echo "${summary}" | jq -r '.data_added // 0')
-                total_bytes=$(echo "${summary}" | jq -r '.total_bytes_processed // 0')
+            if command -v jq &> /dev/null && [[ "${summary}" != "{}" ]]; then
+                snapshot_id=$(echo "${summary}" | jq -r '.snapshot_id // "N/A"' 2>/dev/null | cut -c1-8)
+                files_new=$(echo "${summary}" | jq -r '.files_new // 0' 2>/dev/null)
+                files_changed=$(echo "${summary}" | jq -r '.files_changed // 0' 2>/dev/null)
+                files_unmodified=$(echo "${summary}" | jq -r '.files_unmodified // 0' 2>/dev/null)
+                dirs_new=$(echo "${summary}" | jq -r '.dirs_new // 0' 2>/dev/null)
+                dirs_changed=$(echo "${summary}" | jq -r '.dirs_changed // 0' 2>/dev/null)
+                dirs_unmodified=$(echo "${summary}" | jq -r '.dirs_unmodified // 0' 2>/dev/null)
+                data_added=$(echo "${summary}" | jq -r '.data_added // 0' 2>/dev/null)
+                total_bytes=$(echo "${summary}" | jq -r '.total_bytes_processed // 0' 2>/dev/null)
                 
-                local duration_sec=$(echo "${summary}" | jq -r '.total_duration // 0')
+                local duration_sec
+                duration_sec=$(echo "${summary}" | jq -r '.total_duration // 0' 2>/dev/null)
                 if [[ -n "${duration_sec}" && "${duration_sec}" != "0" ]]; then
                     local dur_int=${duration_sec%.*}
                     local minutes=$((dur_int / 60))
@@ -186,8 +272,10 @@ execute_backup() {
             fi
             
             # Format sizes
-            local data_added_fmt=$(numfmt --to=iec-i --suffix=B "${data_added}" 2>/dev/null || echo "${data_added} bytes")
-            local total_bytes_fmt=$(numfmt --to=iec-i --suffix=B "${total_bytes}" 2>/dev/null || echo "${total_bytes} bytes")
+            local data_added_fmt
+            local total_bytes_fmt
+            data_added_fmt=$(numfmt --to=iec-i --suffix=B "${data_added}" 2>/dev/null || echo "${data_added} bytes")
+            total_bytes_fmt=$(numfmt --to=iec-i --suffix=B "${total_bytes}" 2>/dev/null || echo "${total_bytes} bytes")
             
             # Print success message
             print_header "BACKUP SUCCESSFUL"
@@ -205,14 +293,19 @@ execute_backup() {
             echo ""
             print_separator
             
+            # Verify backup integrity
+            verify_backup
+            
             return 0
         fi
         
         # Check for network errors
         if echo "${output}" | grep -qiE 'network|connection|timeout|unreachable|B2|backblaze'; then
             if [[ ${attempt} -lt ${MAX_RETRIES} ]]; then
-                echo "Network error detected. Retrying in ${RETRY_DELAY} seconds... (Attempt ${attempt}/${MAX_RETRIES})"
-                sleep ${RETRY_DELAY}
+                # Exponential backoff: delay increases with each attempt
+                local backoff=$((BASE_RETRY_DELAY * (2 ** (attempt - 1))))
+                echo "Network error detected. Retrying in ${backoff} seconds... (Attempt ${attempt}/${MAX_RETRIES})"
+                sleep "${backoff}"
                 ((attempt++))
                 continue
             else
@@ -222,7 +315,8 @@ execute_backup() {
             fi
         else
             # Non-network error
-            local error_msg=$(echo "${output}" | head -20)
+            local error_msg
+            error_msg=$(echo "${output}" | head -20)
             exit_with_error "Backup execution" "${EXIT_BACKUP_ERROR}" "${error_msg}"
         fi
     done
