@@ -450,7 +450,7 @@ restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --prune
                BACKUP SUCCESSFUL
 =============================================
 Timestamp:      2025-10-04 01:26:01
-Repository:     b2:MyPrivateBucket666:restic_repo
+Repository:     b2:MyBucket:repo_dir
 Source Dirs:    /home/user/.bashrc.d/ /home/user/Backup/
 -------------- Restic Summary ---------------
 Files:          0 new, 1 changed, 12831 unmodified
@@ -458,6 +458,10 @@ Dirs:           0 new, 4 changed, 4701 unmodified
 Data Added:     18KiB
 Total Processed: 232MiB
 Duration:       0m 6s
-Snapshot ID:    e6011852
+Snapshot ID:    e6011222
+
 ---------------------------------------------
+
+Verifying backup integrity...
+✓ Backup verification successful
 ```
