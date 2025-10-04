@@ -17,6 +17,7 @@ Simple script to automate secure backups with [Restic](https://restic.net/) and 
 <br>
 
 ## 📋 Requirements
+- A Linux installation.
 - Restic installed in the local machine.
 - Backblaze B2 account (can be free-tier or paid).
 
