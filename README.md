@@ -1,6 +1,6 @@
 # Restic Backup to Backblaze B2
 
-Simple script to automate secure backups with [Restic](https://restic.net/) with [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) cloud storage.
+Simple script to automate secure backups with [Restic](https://restic.net/) and [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) cloud storage.
 
 ---
 <br>
