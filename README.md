@@ -333,22 +333,6 @@ systemctl --user daemon-reload
 systemctl --user enable restic-backup.timer
 ```
 
-#### View Backup Logs
-
-```bash
-# Follow live logs
-journalctl --user -u restic-backup.service -f
-
-# View last 50 lines
-journalctl --user -u restic-backup.service -n 50
-
-# View logs from today
-journalctl --user -u restic-backup.service --since today
-
-# View logs with specific priority
-journalctl --user -u restic-backup.service -p err
-```
-
 #### Results
 Now, the backup to B2 is scheduled to run as configured in the systemd timer. Success and failure output will be visible in the systemd journal.
 
@@ -392,6 +376,25 @@ restic restore latest --target /tmp/restore --include ~/Documents/important.txt
 
 # Restore with path pattern
 restic restore latest --target /tmp/restore --include '**/*.pdf'
+```
+
+<br>
+
+
+### View Backup Logs
+
+```shell
+# Follow live logs
+journalctl --user -u restic-backup.service -f
+
+# View last 50 lines
+journalctl --user -u restic-backup.service -n 50
+
+# View logs from today
+journalctl --user -u restic-backup.service --since today
+
+# View logs with specific priority
+journalctl --user -u restic-backup.service -p err
 ```
 
 <br>
