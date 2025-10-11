@@ -290,6 +290,9 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 
+# Additional security protection
+NoNewPrivileges=true
+
 # Execute the backup script
 ExecStart=~/.local/bin/restic-backup.sh
 
