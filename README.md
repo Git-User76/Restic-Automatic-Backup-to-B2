@@ -5,7 +5,7 @@ Simple script to automate secure backups with [Restic](https://restic.net/) and 
 ---
 <br>
 
-## ✨ Features
+## Features
 - **Secure**: AES-256 encryption, strict file permissions (0600), comprehensive input validation
 - **Reliable**: Automatic retry logic with configurable attempts for network failures
 - **Minimal**: Single bash script with only restic as a dependency
@@ -16,7 +16,7 @@ Simple script to automate secure backups with [Restic](https://restic.net/) and 
 ---
 <br>
 
-## 📋 Requirements
+## Requirements
 - A Linux installation.
 - Restic installed in the local machine.
 - Backblaze B2 account (can be free-tier or paid).
@@ -24,7 +24,7 @@ Simple script to automate secure backups with [Restic](https://restic.net/) and 
 ---
 <br>
 
-## 📁 Configuration Files
+## Configuration Files
 ### Configuration File Locations
 
 ```
@@ -100,7 +100,7 @@ Exclusion patterns using restic's syntax. Supports:
 ---
 <br>
 
-## 🔧 Installation
+## Installation
 
 ### 1. Install Restic
 
@@ -130,7 +130,7 @@ mv restic-backup.sh ~/.local/bin/restic-backup.sh
 ---
 <br>
 
-## ⚙️ Configuration
+## Configuration
 ### Step 1: Create Configuration Files
 ```shell
 # Create configuration directory
@@ -258,7 +258,7 @@ created restic repository 1a2b3c4d5e at b2:your-bucket-name:restic-backups
 ---
 <br>
 
-## 🚀 Usage
+## Usage
 ### Manual Backup
 
 ```shell
@@ -446,7 +446,7 @@ restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --prune
 ---
 <br>
 
-## 📊 Resulting Output
+## Resulting Output
 
 ```text
 =============================================
