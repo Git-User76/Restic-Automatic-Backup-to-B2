@@ -2,7 +2,6 @@
 
 Simple script to automate secure backups with [Restic](https://restic.net/) and [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) cloud storage.
 
----
 <br>
 
 ## Features
@@ -13,7 +12,6 @@ Simple script to automate secure backups with [Restic](https://restic.net/) and 
 - **Systemd-Ready**: Clean exit codes and console output designed for systemd timers
 - **Simple**: Clear configuration files, no complex setup
 
----
 <br>
 
 ## Requirements
@@ -21,7 +19,6 @@ Simple script to automate secure backups with [Restic](https://restic.net/) and 
 - Restic installed in the local machine.
 - Backblaze B2 account (can be free-tier or paid).
 
----
 <br>
 
 ## Configuration Files
@@ -97,7 +94,6 @@ Exclusion patterns using restic's syntax. Supports:
 **/__pycache__/**
 ```
 
----
 <br>
 
 ## Installation
@@ -127,7 +123,6 @@ mkdir -p ~/.local/bin
 mv restic-backup.sh ~/.local/bin/restic-backup.sh
 ```
 
----
 <br>
 
 ## Configuration
@@ -255,7 +250,6 @@ You should see:
 created restic repository 1a2b3c4d5e at b2:your-bucket-name:restic-backups
 ```
 
----
 <br>
 
 ## Usage
@@ -383,7 +377,6 @@ restic restore latest --target /tmp/restore --include '**/*.pdf'
 
 <br>
 
-
 ### View Backup Logs
 
 ```shell
@@ -443,7 +436,6 @@ restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 12
 restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --prune
 ```
 
----
 <br>
 
 ## Resulting Output
